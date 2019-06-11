@@ -39,7 +39,7 @@ def view_results(img_hr_rgb,results):
 	label_image = measure.label(results)
 
 	fig, ax = plt.subplots(figsize=(10, 6))
-	ax.imshow(img_hr_rgb)
+	ax.imshow(img_hr_rgb,interpolation="nearest")
 
 	for region in measure.regionprops(label_image):
 		y,x = region.centroid
@@ -177,14 +177,8 @@ def detect_blobs(img):
 	for i,blob in enumerate(blobs_log):
 		y, x, r = blob
 		rr, cc = circle(y, x, r)
-		s = np.linspace(0, 2*np.pi, 400)
-		x = x + r*np.cos(s)
-		y = y + r*np.sin(s)
-		init = np.array([x, y]).T
-		#snake = active_contour(gaussian(img, 3), init, alpha=0.015, beta=10, gamma=0.001)
-		ax.plot(init[:, 0], init[:, 1], '-r', lw=3)
-		#c = plt.Circle((x, y), r, color='red', linewidth=2, fill=False)
-		#ax.add_patch(c)
+		c = plt.Circle((x, y), r, color='red', linewidth=2, fill=False)
+		ax.add_patch(c)
 		#ax.plot(snake[:, 0], snake[:, 1], '-b', lw=3)
 		try:
 			img_contours[rr, cc] = 1
@@ -224,11 +218,24 @@ labels = {
 	"bird" : 1,
 	"tree": 2
 }
+import cv2
+from scipy.misc import bytescale
 
 if __name__ == '__main__':
-	dir_testing = "data/tile_20"
+	
 	dir_testing = sys.argv[1]
 	img_testing = tiff.imread(dir_testing)
+	rows,cols,channels = img_testing.shape
+
+	if channels > 3:
+		img_testing = img_testing[:,:,0:3]
+		r = bytescale(img_testing[:,:,0])
+		g = bytescale(img_testing[:,:,1])
+		b = bytescale(img_testing[:,:,2])
+		img_testing = cv2.merge([r,g,b])
+
+	print img_testing.shape
+
 	image_gray = rgb2gray(img_testing)
 	blobs = detect_blobs(image_gray)
 
@@ -268,4 +275,4 @@ if __name__ == '__main__':
 	pca = joblib.load("models/pca.pkl")
 	clf = joblib.load("models/svm.pkl")
 	result = testing(pca,clf,img_testing,dir_testing)
-	#view_results(img_testing,result)
+	#view_results(image_gray,result)
